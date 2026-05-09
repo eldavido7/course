@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { DashboardHeader } from '@/components/dashboard-header';
-import { mockCourses } from '@/lib/data';
+import { useCourses } from '@/lib/use-courses';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -14,9 +14,11 @@ import {
 } from '@/components/ui/collapsible';
 import { ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function CoursePreviewPage() {
   const { isLoggedIn, user, enrollCourse, getProgress } = useAuth();
+  const allCourses = useCourses();
   const router = useRouter();
   const params = useParams();
   const courseId = params.id as string;
@@ -29,14 +31,14 @@ export default function CoursePreviewPage() {
       return;
     }
 
-    const foundCourse = mockCourses.find(c => c.id === courseId);
+    const foundCourse = allCourses.find(c => c.id === courseId);
     if (!foundCourse) {
       router.push('/dashboard');
       return;
     }
 
     setCourse(foundCourse);
-  }, [isLoggedIn, courseId, router]);
+  }, [isLoggedIn, courseId, allCourses, router]);
 
   if (!course) {
     return null;
@@ -50,12 +52,18 @@ export default function CoursePreviewPage() {
 
   const handleEnroll = () => {
     setIsEnrolling(true);
-    enrollCourse(course.id);
-    setTimeout(() => {
+    try {
+      enrollCourse(course.id);
+      toast.success('Enrolled in course');
+      setTimeout(() => {
+        setIsEnrolling(false);
+        // Rerender to show enrolled state
+        router.refresh();
+      }, 300);
+    } catch {
+      toast.error('Could not enroll in this course');
       setIsEnrolling(false);
-      // Rerender to show enrolled state
-      router.refresh();
-    }, 300);
+    }
   };
 
   return (

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,12 +24,14 @@ export default function LoginPage() {
     // Simple validation
     if (!email || !password) {
       setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       setLoading(false);
       return;
     }
 
     if (!email.includes('@')) {
       setError('Please enter a valid email');
+      toast.error('Please enter a valid email');
       setLoading(false);
       return;
     }
@@ -36,9 +39,11 @@ export default function LoginPage() {
     // Mock login
     try {
       login(email, password);
+      toast.success('Signed in successfully');
       router.push('/dashboard');
     } catch (err) {
       setError('Login failed. Please try again.');
+      toast.error('Login failed. Please try again.');
     } finally {
       setLoading(false);
     }

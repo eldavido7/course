@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
   const [email, setEmail] = useState('');
@@ -24,24 +25,28 @@ export default function SignupPage() {
     // Validation
     if (!email || !password || !confirmPassword) {
       setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       setLoading(false);
       return;
     }
 
     if (!email.includes('@')) {
       setError('Please enter a valid email');
+      toast.error('Please enter a valid email');
       setLoading(false);
       return;
     }
 
     if (password.length < 6) {
       setError('Password must be at least 6 characters');
+      toast.error('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match');
+      toast.error('Passwords do not match');
       setLoading(false);
       return;
     }
@@ -49,9 +54,11 @@ export default function SignupPage() {
     // Mock signup
     try {
       signup(email, password);
+      toast.success('Account created successfully');
       router.push('/dashboard');
     } catch (err) {
       setError('Signup failed. Please try again.');
+      toast.error('Signup failed. Please try again.');
     } finally {
       setLoading(false);
     }

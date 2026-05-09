@@ -4,13 +4,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { DashboardHeader } from '@/components/dashboard-header';
-import { mockCourses } from '@/lib/data';
+import { useCourses } from '@/lib/use-courses';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default function ProfilePage() {
   const { isLoggedIn, user, getProgress } = useAuth();
+  const allCourses = useCourses();
   const router = useRouter();
 
   useEffect(() => {
@@ -23,13 +24,13 @@ export default function ProfilePage() {
     return null;
   }
 
-  const enrolledCourses = mockCourses.filter(c => user.enrolledCourses.includes(c.id));
+  const enrolledCourses = allCourses.filter(c => user.enrolledCourses.includes(c.id));
 
   const getProgressPercentage = (courseId: string) => {
     const progress = getProgress(courseId);
     if (!progress) return 0;
 
-    const course = mockCourses.find(c => c.id === courseId);
+    const course = allCourses.find(c => c.id === courseId);
     if (!course) return 0;
 
     const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
@@ -52,7 +53,7 @@ export default function ProfilePage() {
   });
 
   const totalLessonsCompleted = user.progress.reduce((sum, p) => sum + p.completedLessonIds.length, 0);
-  const totalLessonsAvailable = mockCourses.reduce((sum, c) => {
+  const totalLessonsAvailable = allCourses.reduce((sum, c) => {
     return sum + c.modules.reduce((mSum, m) => mSum + m.lessons.length, 0);
   }, 0);
 

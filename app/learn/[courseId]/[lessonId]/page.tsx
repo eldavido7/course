@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
-import { mockCourses } from '@/lib/data';
+import { useCourses } from '@/lib/use-courses';
 import { Button } from '@/components/ui/button';
 import {
   Collapsible,
@@ -17,9 +17,12 @@ import {
 } from '@/components/ui/drawer';
 import { Menu, X, Volume2, Pause, Play } from 'lucide-react';
 import Link from 'next/link';
+import { toast } from 'sonner';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LearningPage() {
   const { isLoggedIn, user, markLessonComplete, setLastLesson, getProgress } = useAuth();
+  const allCourses = useCourses();
   const router = useRouter();
   const params = useParams();
   const courseId = params.courseId as string;
@@ -39,7 +42,7 @@ export default function LearningPage() {
       return;
     }
 
-    const foundCourse = mockCourses.find(c => c.id === courseId);
+    const foundCourse = allCourses.find(c => c.id === courseId);
     if (!foundCourse) {
       router.push('/dashboard');
       return;
@@ -67,7 +70,7 @@ export default function LearningPage() {
     setCurrentModule(foundModule);
 
     setLastLesson(courseId, lessonId);
-  }, [isLoggedIn, courseId, lessonId, router, user, getProgress, setLastLesson]);
+  }, [isLoggedIn, courseId, lessonId, router, user, getProgress, setLastLesson, allCourses]);
 
   if (!course || !lesson || !currentModule) {
     return null;
@@ -96,20 +99,40 @@ export default function LearningPage() {
     prevLesson = prevModule.lessons[prevModule.lessons.length - 1];
   }
 
-  const handleCompleteLesson = () => {
+  const completeCurrentLesson = (message: string) => {
     if (!isCompleted) {
-      markLessonComplete(courseId, lessonId);
+      try {
+        markLessonComplete(courseId, lessonId);
+        toast.success(message);
+      } catch {
+        toast.error('Could not mark lesson complete');
+        return false;
+      }
     }
 
-    if (nextLesson) {
-      router.push(`/learn/${courseId}/${nextLesson.id}`);
-    }
+    return true;
+  };
+
+  const handleNextLesson = () => {
+    if (!nextLesson) return;
+
+    if (!completeCurrentLesson('Lesson completed')) return;
+    router.push(`/learn/${courseId}/${nextLesson.id}`);
+  };
+
+  const handleCompleteCourse = () => {
+    if (!completeCurrentLesson('Course completed')) return;
   };
 
   const handleTTS = () => {
     if (!showTTS) {
       setShowTTS(true);
-      speakLesson();
+      const didStart = speakLesson();
+
+      if (!didStart) {
+        setShowTTS(false);
+        toast.error('Text to speech is not available in this browser');
+      }
     }
   };
 
@@ -123,7 +146,10 @@ export default function LearningPage() {
       utterance.onend = () => setTtsState('stopped');
 
       window.speechSynthesis.speak(utterance);
+      return true;
     }
+
+    return false;
   };
 
   const toggleTTSPlayPause = () => {
@@ -211,8 +237,8 @@ export default function LearningPage() {
             LearnHub
           </Link>
 
-          {/* Mobile menu */}
-          <div className="sm:hidden">
+          <div className="flex items-center gap-2 sm:hidden">
+            <ThemeToggle />
             <Drawer open={openDrawer} onOpenChange={setOpenDrawer}>
               <DrawerTrigger asChild>
                 <Button variant="ghost" size="sm">
@@ -226,7 +252,8 @@ export default function LearningPage() {
           </div>
 
           {/* Desktop nav links */}
-          <div className="hidden sm:flex gap-4">
+          <div className="hidden sm:flex items-center gap-2">
+            <ThemeToggle />
             <Link href={`/course/${courseId}`}>
               <Button variant="ghost" size="sm">Back to course</Button>
             </Link>
@@ -340,28 +367,19 @@ export default function LearningPage() {
                 <div className="flex-1" />
               )}
 
-              <Button
-                onClick={handleCompleteLesson}
-                disabled={isCompleted}
-                variant={isCompleted ? 'secondary' : 'default'}
-                className="flex-1"
-              >
-                {isCompleted ? 'Completed' : 'Mark as complete'}
-                {!isCompleted && nextLesson && ' & continue'}
-              </Button>
-
               {nextLesson ? (
-                <Link href={`/learn/${courseId}/${nextLesson.id}`} className="flex-1">
-                  <Button className="w-full">
-                    Next Lesson →
-                  </Button>
-                </Link>
+                <Button onClick={handleNextLesson} className="flex-1">
+                  Next Lesson →
+                </Button>
               ) : (
-                <Link href={`/course/${courseId}`} className="flex-1">
-                  <Button className="w-full">
-                    Back to course
-                  </Button>
-                </Link>
+                <Button
+                  onClick={handleCompleteCourse}
+                  disabled={isCompleted}
+                  variant={isCompleted ? 'secondary' : 'default'}
+                  className="flex-1"
+                >
+                  {isCompleted ? 'Course completed' : 'Mark course complete'}
+                </Button>
               )}
             </div>
           </main>

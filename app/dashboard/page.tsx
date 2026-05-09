@@ -4,13 +4,14 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { DashboardHeader } from '@/components/dashboard-header';
-import { mockCourses } from '@/lib/data';
+import { useCourses } from '@/lib/use-courses';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
 export default function DashboardPage() {
   const { isLoggedIn, user, getProgress } = useAuth();
+  const allCourses = useCourses();
   const router = useRouter();
 
   useEffect(() => {
@@ -23,8 +24,8 @@ export default function DashboardPage() {
     return null;
   }
 
-  const enrolledCourses = mockCourses.filter(c => user.enrolledCourses.includes(c.id));
-  const availableCourses = mockCourses.filter(c => !user.enrolledCourses.includes(c.id));
+  const enrolledCourses = allCourses.filter(c => user.enrolledCourses.includes(c.id));
+  const availableCourses = allCourses.filter(c => !user.enrolledCourses.includes(c.id));
 
   // Get courses with started lessons
   const continueLearnCourses = enrolledCourses.filter(course => {
@@ -36,7 +37,7 @@ export default function DashboardPage() {
     const progress = getProgress(courseId);
     if (!progress) return 0;
 
-    const course = mockCourses.find(c => c.id === courseId);
+    const course = allCourses.find(c => c.id === courseId);
     if (!course) return 0;
 
     const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
@@ -126,7 +127,7 @@ export default function DashboardPage() {
             {availableCourses.length > 0 ? 'Available Courses' : 'All Courses'}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {(availableCourses.length > 0 ? availableCourses : enrolledCourses.length === 0 ? mockCourses : []).map(course => {
+            {(availableCourses.length > 0 ? availableCourses : enrolledCourses.length === 0 ? allCourses : []).map(course => {
               const totalLessons = course.modules.reduce((sum, m) => sum + m.lessons.length, 0);
 
               return (
